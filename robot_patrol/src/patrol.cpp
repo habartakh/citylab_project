@@ -31,6 +31,8 @@ public:
   }
 
 private:
+//! Without callback groups, the publisher gets access to the relevant_scan_ranges
+// vector before we make  
   void scan_topic_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
 
     distance_front = msg->ranges[330];      // distance in front of the robot
@@ -47,12 +49,14 @@ private:
     for (auto it = relevant_scan_ranges.begin();
          it != relevant_scan_ranges.end(); it++) {
 
-      if (*it == std::numeric_limits<float>::max()) {
-        std::cout << "inf element value is : " << std::endl;
-        std::cout << "index of inf element : "
-                  << it - relevant_scan_ranges.begin() << std::endl;
+      if (*it > msg->range_max) {
+        std::cout << "inf element value befor change is : " << *it << std::endl;
+        // std::cout << "index of inf element : "
+        //           << it - relevant_scan_ranges.begin() << std::endl;
 
         *it = -1;
+
+        std::cout << "inf element value after change is : " << *it << std::endl;
       }
     }
 
@@ -65,36 +69,40 @@ private:
 
   void get_safest_direction() {
 
-    // move robot forward till detecting an obstacle less than 35cm
-    if (distance_front > 0.35) {
-      this->twist_msg.linear.x = 0.1;
-      this->twist_msg.angular.z = 0.0;
-      move_robot_publisher->publish(this->twist_msg);
-    }
+    // Get the ray corresponding to maximal distance (other than inf) around
+    // the robot
+    long unsigned int index_max_distance =
+        std::max_element(relevant_scan_ranges.begin(),
+                         relevant_scan_ranges.end()) -
+        relevant_scan_ranges.begin();
+    // if the corresponding angle is between [0, pi/2]
+    if (index_max_distance < relevant_scan_ranges.size() / 2) {
+      direction_ = -(relevant_scan_ranges.size() / 2 - index_max_distance) *
+                   angle_increment;
 
+    }
+    // corresponding angle is between [-pi/2, 0]
     else {
-      // Get the ray corresponding to maximal distance (other than inf) around
-      // the robot
-      long unsigned int index_max_distance =
-          std::max_element(relevant_scan_ranges.begin(),
-                           relevant_scan_ranges.end()) -
-          relevant_scan_ranges.begin();
-      // if the corresponding angle is between [0, pi/2]
-      if (index_max_distance < relevant_scan_ranges.size() / 2) {
-        direction_ = (relevant_scan_ranges.size() / 2 - index_max_distance) *
-                     angle_increment;
-
-      }
-      // corresponding angle is between [-pi/2, 0]
-      else {
-        direction_ = -(relevant_scan_ranges.size() / 2 - index_max_distance) *
-                     angle_increment;
-      }
-      std::cout << "safest direction : " << direction_ << std::endl;
+      direction_ = (relevant_scan_ranges.size() / 2 - index_max_distance) *
+                   angle_increment;
     }
+    std::cout << "safest direction : " << direction_ << std::endl;
   }
 
-  void timer_callback() { get_safest_direction(); }
+  void timer_callback() {
+    // move robot forward till detecting an obstacle less than 35cm
+    if (distance_front > 0.35) {
+
+      this->twist_msg.angular.z = 0.0;
+
+    } else {
+      get_safest_direction();
+      this->twist_msg.angular.z = direction_ / 2;
+    }
+
+    this->twist_msg.linear.x = 0.1;
+    move_robot_publisher->publish(this->twist_msg);
+  }
 
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr
       laser_scan_subscription_;
