@@ -5,6 +5,7 @@
 #include <limits>
 #include <vector>
 
+#define PI 3.14159
 using std::placeholders::_1;
 using namespace std::chrono_literals;
 
@@ -19,23 +20,26 @@ class Patrol : public rclcpp::Node {
 
 public:
   Patrol() : Node("robot_patrol_node") {
+
     // Create a subscriber to /scan topic
     laser_scan_subscription_ =
         this->create_subscription<sensor_msgs::msg::LaserScan>(
             "scan", 10, std::bind(&Patrol::scan_topic_callback, this, _1));
+
     // create a publisher to move the robot
     move_robot_publisher =
         this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
+
     timer_ = this->create_wall_timer(100ms,
                                      std::bind(&Patrol::timer_callback, this));
   }
 
 private:
-//! Without callback groups, the publisher gets access to the relevant_scan_ranges
-// vector before we make  
+ 
   void scan_topic_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
 
     distance_front = msg->ranges[330];      // distance in front of the robot
+    range_max = msg->range_max;             // maximum range value [m]
     angle_increment = msg->angle_increment; // angular distance b/w laser scan
                                             // measurements [rad]
 
@@ -44,62 +48,44 @@ private:
     relevant_scan_ranges = std::vector<float>(msg->ranges.begin() + 165,
                                               msg->ranges.begin() + 495);
 
-    // replace all out of detection range values (inf) by -1
-    // this will help us compute the safest direction
+    get_safest_direction();
+  }
+
+  // Get the ray corresponding to maximal distance (other than inf) around
+  // the robot
+  int get_max_distance_index() {
+    int max_index = 0;
+    double max_distance = 0.0; // Initialize to the smallest possible value
+
     for (auto it = relevant_scan_ranges.begin();
-         it != relevant_scan_ranges.end(); it++) {
-
-      if (*it > msg->range_max) {
-        std::cout << "inf element value befor change is : " << *it << std::endl;
-        // std::cout << "index of inf element : "
-        //           << it - relevant_scan_ranges.begin() << std::endl;
-
-        *it = -1;
-
-        std::cout << "inf element value after change is : " << *it << std::endl;
+         it != relevant_scan_ranges.end(); ++it) {
+      if (*it<range_max && * it> max_distance) {
+        max_distance = *it; // Update the maximum distance
+        max_index = it - relevant_scan_ranges.begin(); // Update the index
       }
     }
-
-    // RCLCPP_INFO(this->get_logger(), " ranges[0]: '%f'", msg->ranges[0]);
-    // RCLCPP_INFO(this->get_logger(), " ranges[165]: '%f'", msg->ranges[165]);
-    // RCLCPP_INFO(this->get_logger(), " ranges[330]: '%f'", msg->ranges[330]);
-    // RCLCPP_INFO(this->get_logger(), " ranges[495]: '%f'", msg->ranges[495]);
-    // RCLCPP_INFO(this->get_logger(), " ranges[660]: '%f'", msg->ranges[659]);
+    return max_index;
   }
 
   void get_safest_direction() {
 
-    // Get the ray corresponding to maximal distance (other than inf) around
-    // the robot
-    long unsigned int index_max_distance =
-        std::max_element(relevant_scan_ranges.begin(),
-                         relevant_scan_ranges.end()) -
-        relevant_scan_ranges.begin();
-    // if the corresponding angle is between [0, pi/2]
-    if (index_max_distance < relevant_scan_ranges.size() / 2) {
-      direction_ = -(relevant_scan_ranges.size() / 2 - index_max_distance) *
-                   angle_increment;
-
-    }
-    // corresponding angle is between [-pi/2, 0]
-    else {
-      direction_ = (relevant_scan_ranges.size() / 2 - index_max_distance) *
-                   angle_increment;
-    }
+    int index_max_distance = get_max_distance_index();
+    direction_ = -(165 - index_max_distance) * angle_increment;
     std::cout << "safest direction : " << direction_ << std::endl;
   }
 
   void timer_callback() {
-    // move robot forward till detecting an obstacle less than 35cm
-    if (distance_front > 0.35) {
 
+    // move robot forward till detecting an obstacle less than 35cm
+    if (distance_front >= 0.35) {
       this->twist_msg.angular.z = 0.0;
 
     } else {
-      get_safest_direction();
-      this->twist_msg.angular.z = direction_ / 2;
-    }
 
+      this->twist_msg.angular.z += direction_ / 2.0;
+      //   std::cout << "this->twist_msg.angular.z" << this->twist_msg.angular.z
+      //             << std::endl;
+    }
     this->twist_msg.linear.x = 0.1;
     move_robot_publisher->publish(this->twist_msg);
   }
@@ -108,6 +94,7 @@ private:
       laser_scan_subscription_;
   float direction_; // safest direction robot can take to complete patrol
   float distance_front;
+  float range_max;
   float angle_increment;
   std::vector<float> relevant_scan_ranges;
 
