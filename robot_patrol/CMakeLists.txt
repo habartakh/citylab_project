@@ -36,6 +36,7 @@ install(TARGETS
 # Install launch files.
 install(DIRECTORY
   launch
+  config # without it config file is not found during launch
   DESTINATION share/${PROJECT_NAME}/
 )
 
