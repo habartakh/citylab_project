@@ -35,7 +35,6 @@ public:
   }
 
 private:
- 
   void scan_topic_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
 
     distance_front = msg->ranges[330];      // distance in front of the robot
@@ -74,17 +73,32 @@ private:
     std::cout << "safest direction : " << direction_ << std::endl;
   }
 
+  // we will verify existance of abstacles ahead using all the rays between
+  // [-30°,30°] corresponding to relevant_scan_ranges[110,220]
+  bool obstacle_detected_forward() {
+    bool obstacle_detected = false;
+    if (!relevant_scan_ranges.empty()) {
+      for (auto it = relevant_scan_ranges.begin() + 110;
+           it != relevant_scan_ranges.begin() + 220; it++) {
+        if (*it < 0.35) {
+          obstacle_detected = true;
+        }
+      }
+    }
+    return obstacle_detected;
+  }
+
   void timer_callback() {
 
     // move robot forward till detecting an obstacle less than 35cm
-    if (distance_front >= 0.35) {
-      this->twist_msg.angular.z = 0.0;
+    // However, it is problematic to use only 1 ray to verify exixtence of
+    // obstacles
+
+    if (obstacle_detected_forward()) {
+      this->twist_msg.angular.z = direction_ / 2.0;
 
     } else {
-
-      this->twist_msg.angular.z += direction_ / 2.0;
-      //   std::cout << "this->twist_msg.angular.z" << this->twist_msg.angular.z
-      //             << std::endl;
+      this->twist_msg.angular.z = 0.0;
     }
     this->twist_msg.linear.x = 0.1;
     move_robot_publisher->publish(this->twist_msg);
