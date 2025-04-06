@@ -12,6 +12,8 @@ find_package(nav_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -40,5 +42,9 @@ install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}/
 )
 
+# add custom interface
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "srv/GetDirection.srv"
+)
 
 ament_package()
