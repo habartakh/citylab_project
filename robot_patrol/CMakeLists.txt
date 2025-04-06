@@ -30,8 +30,16 @@ endif()
 add_executable(robot_patrol_node src/patrol.cpp)
 ament_target_dependencies(robot_patrol_node rclcpp nav_msgs sensor_msgs geometry_msgs)
 
+add_executable(direction_service_node src/direction_service.cpp)
+ament_target_dependencies(direction_service_node rclcpp nav_msgs sensor_msgs)
+
+add_executable(test_service_node src/test_service.cpp)
+ament_target_dependencies(test_service_node rclcpp nav_msgs sensor_msgs)
+
 install(TARGETS
    robot_patrol_node
+   direction_service_node
+   test_service_node
    DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -45,6 +53,15 @@ install(DIRECTORY
 # add custom interface
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/GetDirection.srv"
+  DEPENDENCIES sensor_msgs
+)
+
+rosidl_target_interfaces(direction_service_node 
+  ${PROJECT_NAME} "rosidl_typesupport_cpp"
+)
+
+rosidl_target_interfaces(test_service_node 
+  ${PROJECT_NAME} "rosidl_typesupport_cpp"
 )
 
 ament_package()
