@@ -5,7 +5,6 @@
 #include <limits>
 #include <vector>
 
-#define PI 3.14159
 using std::placeholders::_1;
 using namespace std::chrono_literals;
 
@@ -14,7 +13,7 @@ using namespace std::chrono_literals;
 // 0-360 : BACK
 // 165   : RIGHT
 // 330   : FRONT
-// 465   : LEFT
+// 495   : LEFT
 
 class Patrol : public rclcpp::Node {
 
@@ -96,13 +95,14 @@ private:
   // However, it is problematic to use only 1 ray to verify existence of
   // obstacles, instead we use obstacle_detected_forward method
   void timer_callback() {
+    this->twist_msg.linear.x = 0.1;
     if (obstacle_detected_forward()) {
       this->twist_msg.angular.z = direction_ / 2.0;
 
     } else {
       this->twist_msg.angular.z = 0.0;
     }
-    this->twist_msg.linear.x = 0.1;
+
     move_robot_publisher->publish(this->twist_msg);
   }
 
