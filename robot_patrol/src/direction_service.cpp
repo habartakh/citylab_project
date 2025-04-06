@@ -41,32 +41,33 @@ private:
         get_section_distance(request->laser_data.ranges.begin() + 385,
                              request->laser_data.ranges.begin() + 495);
 
-    std::cout << "total_dist_sec_right" << total_dist_sec_right << std::endl;
-    std::cout << "total_dist_sec_front" << total_dist_sec_front << std::endl;
-    std::cout << "total_dist_sec_left" << total_dist_sec_left << std::endl;
+    std::cout << "total_dist_sec_right: " << total_dist_sec_right << std::endl;
+    std::cout << "total_dist_sec_front: " << total_dist_sec_front << std::endl;
+    std::cout << "total_dist_sec_left:  " << total_dist_sec_left << std::endl;
 
-    if (total_dist_sec_right >= total_dist_sec_front && total_dist_sec_right >= total_dist_sec_left){
-        response->direction = "right";
+    if (total_dist_sec_right >= total_dist_sec_front &&
+        total_dist_sec_right >= total_dist_sec_left) {
+      response->direction = "right";
     }
-    if (total_dist_sec_front >= total_dist_sec_right && total_dist_sec_front >= total_dist_sec_left){
-        response->direction = "front";
+    if (total_dist_sec_front >= total_dist_sec_right &&
+        total_dist_sec_front >= total_dist_sec_left) {
+      response->direction = "front";
     }
-    if (total_dist_sec_left >= total_dist_sec_front && total_dist_sec_left >= total_dist_sec_right){
-        response->direction = "left";
+    if (total_dist_sec_left >= total_dist_sec_front &&
+        total_dist_sec_left >= total_dist_sec_right) {
+      response->direction = "left";
     }
   }
 
-  // Get the average distance for different sections of 60° of the laser rays
+  // Get the total distances for different sections of 60° of the laser rays
   float get_section_distance(auto begin_iterator, auto end_iterator) {
     float section_sum = 0.0;
-    int number_of_elements = 0;
     for (auto it = begin_iterator; it < end_iterator + 1; it++) {
       if (std::isfinite(*it)) {
         section_sum += *it;
-        number_of_elements++;
       }
     }
-    return section_sum / number_of_elements;
+    return section_sum;
   }
 };
 int main(int argc, char **argv) {
