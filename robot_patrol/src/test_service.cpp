@@ -33,10 +33,10 @@ private:
   void timer_callback() {
 
     if (!service_called_) {
-      RCLCPP_INFO(this->get_logger(), "Send Async Request");
+      RCLCPP_INFO(this->get_logger(), "Service Requested");
       send_async_request();
     } else {
-      RCLCPP_INFO(this->get_logger(), "Timer Callback Executed");
+      RCLCPP_INFO(this->get_logger(), "Please wait a moment...");
     }
   }
 
@@ -54,6 +54,8 @@ private:
 
     auto request = std::make_shared<GetDirection::Request>();
     request->laser_data = laser_scan_msg;
+
+    // RCLCPP_INFO(this->get_logger(), "Service Request \n");
     auto result_future = client_->async_send_request(
         request, std::bind(&TestServiceNode::response_callback, this,
                            std::placeholders::_1));
@@ -71,7 +73,7 @@ private:
   void response_callback(rclcpp::Client<GetDirection>::SharedFuture future) {
     // Get response value
     auto response = future.get();
-    RCLCPP_INFO(this->get_logger(), "Response: %s \n",
+    RCLCPP_INFO(this->get_logger(), "Service returned response: %s \n",
                 response->direction.c_str());
     service_done_ = true;
   }
@@ -79,6 +81,8 @@ private:
 public:
   TestServiceNode() : Node("service_client") {
     client_ = this->create_client<GetDirection>("direction_service");
+    RCLCPP_INFO(this->get_logger(), "Service Client Ready \n");
+
     timer_ = this->create_wall_timer(
         1s, std::bind(&TestServiceNode::timer_callback, this));
 

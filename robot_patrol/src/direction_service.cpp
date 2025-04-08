@@ -1,3 +1,4 @@
+#include "rclcpp/logging.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp/utilities.hpp"
 #include <cmath>
@@ -18,6 +19,7 @@ public:
     srv_ = create_service<GetDirection>(
         "/direction_service",
         std::bind(&DirectionService::service_callback, this, _1, _2));
+    RCLCPP_INFO(this->get_logger(), "Service Server Ready \n");
   }
 
 private:
@@ -31,6 +33,7 @@ private:
   service_callback(const std::shared_ptr<GetDirection::Request> request,
                    const std::shared_ptr<GetDirection::Response> response) {
 
+    RCLCPP_INFO(this->get_logger(), "Service Server Requested \n");
     total_dist_sec_right =
         get_section_distance(request->laser_data.ranges.begin() + 165,
                              request->laser_data.ranges.begin() + 275);
@@ -41,9 +44,10 @@ private:
         get_section_distance(request->laser_data.ranges.begin() + 385,
                              request->laser_data.ranges.begin() + 495);
 
-    std::cout << "total_dist_sec_right: " << total_dist_sec_right << std::endl;
-    std::cout << "total_dist_sec_front: " << total_dist_sec_front << std::endl;
-    std::cout << "total_dist_sec_left:  " << total_dist_sec_left << std::endl;
+    // std::cout << "total_dist_sec_right: " << total_dist_sec_right <<
+    // std::endl; std::cout << "total_dist_sec_front: " << total_dist_sec_front
+    // << std::endl; std::cout << "total_dist_sec_left:  " <<
+    // total_dist_sec_left << std::endl;
 
     if (total_dist_sec_right >= total_dist_sec_front &&
         total_dist_sec_right >= total_dist_sec_left) {
@@ -57,6 +61,9 @@ private:
         total_dist_sec_left >= total_dist_sec_right) {
       response->direction = "left";
     }
+    RCLCPP_INFO(this->get_logger(), "Service returned: %s \n",
+                response->direction.c_str());
+    RCLCPP_INFO(this->get_logger(), "Service Completed \n");
   }
 
   // Get the total distances for different sections of 60° of the laser rays
