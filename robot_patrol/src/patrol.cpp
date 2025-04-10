@@ -13,21 +13,11 @@ using namespace std::chrono_literals;
 
 // Number of laser rays : 720
 // Laser scan ranges vector correspondances:
-<<<<<<< HEAD
-<<<<<<< HEAD
-// 0-360 : BACK
-// 165   : RIGHT
-// 330   : FRONT
-// 495   : LEFT
-=======
 // 0-720 : BACK
-=======
 // 0     : BACK
->>>>>>> 539d588 (Changed approach to compute safest direction to move robot)
 // 180   : RIGHT
 // 360   : FRONT
 // 540   : LEFT
->>>>>>> 992f095 (Adapted the code to work on the real robot)
 
 class Patrol : public rclcpp::Node {
 
@@ -116,19 +106,13 @@ private:
   // However, it is problematic to use only 1 ray to verify existence of
   // obstacles, instead we use all the rays drom [-pi/6,pi/6]
   void timer_callback() {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    this->twist_msg.linear.x = 0.1;
-    if (obstacle_detected_forward()) {
-=======
-=======
 
     this->twist_msg.linear.x = 0.1;
-    this->twist_msg.angular.z = 0.0;
+    if (!obstacle_detected) {
+      this->twist_msg.angular.z = 0.0;
+    }
 
->>>>>>> 539d588 (Changed approach to compute safest direction to move robot)
     if (obstacle_detected) {
->>>>>>> 992f095 (Adapted the code to work on the real robot)
       this->twist_msg.angular.z = direction_ / 2.0;
       RCLCPP_INFO(this->get_logger(), "Obstacle detected....");
     }
