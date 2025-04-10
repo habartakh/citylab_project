@@ -8,12 +8,15 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(action_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
-
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -39,11 +42,15 @@ ament_target_dependencies(test_service_node rclcpp nav_msgs sensor_msgs)
 add_executable(patrol_with_service_node src/patrol_with_service.cpp)
 ament_target_dependencies(patrol_with_service_node rclcpp nav_msgs sensor_msgs)
 
+add_executable(go_to_pose_action_node src/go_to_pose_action.cpp)
+ament_target_dependencies(go_to_pose_action_node rclcpp rclcpp_action tf2_geometry_msgs tf2_ros nav_msgs geometry_msgs action_msgs)
+
 install(TARGETS
    robot_patrol_node
    direction_service_node
    test_service_node
    patrol_with_service_node
+   go_to_pose_action_node
    DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -57,7 +64,8 @@ install(DIRECTORY
 # add custom interface
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/GetDirection.srv"
-  DEPENDENCIES sensor_msgs
+  "action/GoToPose.action"
+  DEPENDENCIES sensor_msgs geometry_msgs
 )
 
 rosidl_target_interfaces(direction_service_node 
@@ -69,6 +77,10 @@ rosidl_target_interfaces(test_service_node
 )
 
 rosidl_target_interfaces(patrol_with_service_node 
+  ${PROJECT_NAME} "rosidl_typesupport_cpp"
+)
+
+rosidl_target_interfaces(go_to_pose_action_node 
   ${PROJECT_NAME} "rosidl_typesupport_cpp"
 )
 
