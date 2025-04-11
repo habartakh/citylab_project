@@ -73,10 +73,6 @@ private:
     current_pos_.theta = yaw; // in rads
     current_pos_.x = msg->pose.pose.position.x;
     current_pos_.y = msg->pose.pose.position.y;
-
-    // std::cout << "current_pos_.theta : " << current_pos_.theta << std::endl;
-    // std::cout << "current_pos_.x : " << current_pos_.x << std::endl;
-    // std::cout << "current_pos_.y : " << current_pos_.y << std::endl;
   }
   rclcpp_action::GoalResponse
   handle_goal(const rclcpp_action::GoalUUID &uuid,
@@ -121,7 +117,8 @@ private:
 
     // Make the robot face the goal
     d_theta = (desired_pos_.theta * M_PI / 180) - current_pos_.theta;
-    while (d_theta > 0.22) {
+    // std::cout << "d_theta BEFORE while Loop : " << d_theta << std::endl;
+    while (std::abs(d_theta) > 0.22) {
       // Check if there is a cancel request
       if (goal_handle->is_canceling()) {
         result->status = false;
@@ -132,7 +129,7 @@ private:
 
       // desired_pos_.theta in degrees
       d_theta = (desired_pos_.theta * M_PI / 180) - current_pos_.theta;
-      std::cout << "d_theta : " << d_theta << std::endl;
+      // std::cout << "d_theta : " << d_theta << std::endl;
 
       move_to_goal.linear.x = 0.0;
       move_to_goal.angular.z = d_theta / 2;
@@ -155,7 +152,7 @@ private:
     //  Then advance the robot in a straight line to the goal
     magnitude = sqrt(std::pow((desired_pos_.x - current_pos_.x), 2) +
                      std::pow((desired_pos_.y - current_pos_.y), 2));
-    while (magnitude > 0.22) {
+    while (std::abs(magnitude) > 0.22) {
       // Check if there is a cancel request
       if (goal_handle->is_canceling()) {
         result->status = false;
@@ -166,7 +163,7 @@ private:
 
       magnitude = sqrt(std::pow((desired_pos_.x - current_pos_.x), 2) +
                        std::pow((desired_pos_.y - current_pos_.y), 2));
-      std::cout << "magnitude : " << magnitude << std::endl;
+      // std::cout << "magnitude : " << magnitude << std::endl;
 
       move_to_goal.linear.x = 0.1;
       move_to_goal.angular.z = 0.0;
