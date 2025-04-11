@@ -2,10 +2,13 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <vector>
 
 #include "robot_patrol/srv/get_direction.hpp"
+
+#define M_PI_6 0.5235983
 
 using std::placeholders::_1;
 using namespace std::chrono_literals;
@@ -40,10 +43,26 @@ public:
 private:
   void scan_topic_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
     laser_scan_msg = *msg;
+    bool obstacle_detected = false;
+
+    int current_index = 0;
+    for (auto it = msg->ranges.begin(); it != msg->ranges.end(); ++it) {
+
+      float current_angle =
+          msg->angle_min + current_index * msg->angle_increment;
+      // obstacle detection in front of the robot between[-pi/6,pi/6]
+      if (current_angle >= -M_PI_4 && current_angle <= M_PI_4) {
+        if (std::isfinite(*it) && *it <= 0.35) {
+          obstacle_detected = true;
+        }
+      }
+      current_index++;
+    }
+
     this->twist_msg.angular.z = 0.0;
     this->twist_msg.linear.x = 0.1;
 
-    if (obstacle_detected_forward()) {
+    if (obstacle_detected) {
       send_async_request(); // call the service to get next direction to move to
 
       if (direction_ == "forward") {
@@ -59,21 +78,6 @@ private:
     }
 
     move_robot_publisher->publish(this->twist_msg);
-  }
-
-  // we will verify existance of obstacles ahead using all the rays between
-  // [-30°,30°] corresponding to laser_scan_msg.ranges[275:385]
-  bool obstacle_detected_forward() {
-    bool obstacle_detected = false;
-    if (!laser_scan_msg.ranges.empty()) {
-      for (auto it = laser_scan_msg.ranges.begin() + 275;
-           it != laser_scan_msg.ranges.begin() + 386; it++) {
-        if (*it < 0.35) {
-          obstacle_detected = true;
-        }
-      }
-    }
-    return obstacle_detected;
   }
 
   // move robot forward till detecting an obstacle less than 35cm

@@ -34,15 +34,33 @@ private:
                    const std::shared_ptr<GetDirection::Response> response) {
 
     RCLCPP_INFO(this->get_logger(), "Service Server Requested \n");
-    total_dist_sec_right =
-        get_section_distance(request->laser_data.ranges.begin() + 165,
-                             request->laser_data.ranges.begin() + 275);
-    total_dist_sec_front =
-        get_section_distance(request->laser_data.ranges.begin() + 275,
-                             request->laser_data.ranges.begin() + 385);
-    total_dist_sec_left =
-        get_section_distance(request->laser_data.ranges.begin() + 385,
-                             request->laser_data.ranges.begin() + 495);
+
+    // Index in the Laser_data corresponding to -M_PI_2
+    int index_minus_pi_2 =
+        static_cast<int>(std::abs((-M_PI_2 - request->laser_data.angle_min) /
+                                  request->laser_data.angle_increment));
+
+    int index_plus_pi_2 =
+        static_cast<int>(std::abs((M_PI_2 - request->laser_data.angle_min) /
+                                  request->laser_data.angle_increment));
+
+    int index_increment =
+        static_cast<int>((index_plus_pi_2 - index_minus_pi_2) / 3);
+
+    // std::cout << "index_minus_pi_2 : " << index_minus_pi_2 << std::endl;
+    // std::cout << "index_plus_pi_2 : " << index_plus_pi_2 << std::endl;
+    // std::cout << "index_increment : " << index_increment << std::endl;
+
+    total_dist_sec_right = get_section_distance(
+        request->laser_data.ranges.begin() + index_minus_pi_2,
+        request->laser_data.ranges.begin() + index_minus_pi_2 +
+            index_increment);
+    total_dist_sec_front = get_section_distance(
+        request->laser_data.ranges.begin() + index_minus_pi_2 + index_increment,
+        request->laser_data.ranges.begin() + index_plus_pi_2 - index_increment);
+    total_dist_sec_left = get_section_distance(
+        request->laser_data.ranges.begin() + index_plus_pi_2 - index_increment,
+        request->laser_data.ranges.begin() + index_plus_pi_2);
 
     // std::cout << "total_dist_sec_right: " << total_dist_sec_right <<
     // std::endl; std::cout << "total_dist_sec_front: " << total_dist_sec_front
