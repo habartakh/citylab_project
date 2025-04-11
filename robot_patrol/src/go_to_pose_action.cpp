@@ -121,7 +121,7 @@ private:
 
     // Make the robot face the goal
     d_theta = (desired_pos_.theta * M_PI / 180) - current_pos_.theta;
-    while (d_theta > 0.22) {
+    while (std::abs(d_theta) > 0.22) {
       // Check if there is a cancel request
       if (goal_handle->is_canceling()) {
         result->status = false;

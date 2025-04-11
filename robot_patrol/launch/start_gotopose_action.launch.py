@@ -15,8 +15,8 @@ def generate_launch_description():
         launch_ros.actions.Node(
              package='robot_patrol',
             executable='go_to_pose_action_node', output='screen'),
-        # launch_ros.actions.Node(
-        #     package='rviz2',
-        #     executable='rviz2',output='screen', arguments=['-d', str(rviz_path)]
-        # ),
+        launch_ros.actions.Node(
+            package='rviz2',
+            executable='rviz2',output='screen', arguments=['-d', str(rviz_path)]
+        ),
     ])
